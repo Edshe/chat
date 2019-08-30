@@ -1,0 +1,28 @@
+version: "3"
+
+services:
+
+    rabbitmq:
+        image: rabbitmq:3.7-management
+        ports:
+            - "127.0.0.1:$RABBITMQ_PORT:5672"
+            - "15672:15672"
+        environment:
+            RABBITMQ_DEFAULT_VHOST: $RABBITMQ_VHOST
+            RABBITMQ_DEFAULT_USER: $RABBITMQ_USER
+            RABBITMQ_DEFAULT_PASS: $RABBITMQ_PASS
+        volumes:
+            - ./docker/volumes/rabbitmq:/var/lib/rabbitmq
+        restart: always
+
+    redis:
+        image: redis:3.2.11-alpine
+        ports:
+            - "127.0.0.1:$REDIS_PORT:6378"
+        volumes:
+            - ./docker/volumes/redis:/data
+
+volumes:
+    db:
+        name: db
+        driver: local
