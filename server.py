@@ -1,37 +1,35 @@
-import asyncio
-import json
-import random
 import peewee_async
 
-import aioredis
 from aiohttp import web, WSCloseCode
+from aiohttp import web_protocol
 
 import settings
 
-from core.models import db
+from core.models import Room, User, Message
+from core.base import db
+
 from urls import routes
 
 
 class ChatApplication(web.Application):
 
-    def __init__(self, **kwargs):
-        super(ChatApplication, self).__init__(**kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.on_startup.append(self.startup)
+        self.on_shutdown.append(self.shutdown)
+        self.websockets = {}
 
-        # db conn
+    async def startup(self):
         db.init(**settings.DATABASE)
+        # db.create_tables([Message])
         self.database = db
         self.database.set_allow_sync(False)
         self.objects = peewee_async.Manager(self.database)
-
-        self.websockets = {}
         self.logger = settings.logger
-
-        self.loop.run_until_complete(self._setup())
-
-    async def _setup(self):
-        self.redis_pool = await aioredis.create_pool(
-            (settings.REDIS_HOST, settings.REDIS_PORT),
-            loop=self.loop
-        )
         for route in routes:
             self.router.add_route(**route)
+
+    async def shutdown(self):
+        for wslist in self.websockets.values():
+            for ws in wslist:
+                await ws.close()

@@ -21,6 +21,12 @@ class RoomView(BaseRESTView):
         data = JSONModelSerializer(rooms).to_json()
         return web.json_response(data)
 
+    async def post(self) -> Response:
+        room = await self.request.app.objects.create(Room)
+
+        data = await JSONModelSerializer(room).to_json()
+        return web.json_response(data, status=201)
+
 
 class WebSocket(BaseRESTView):
     """
@@ -33,35 +39,39 @@ class WebSocket(BaseRESTView):
         self.app = self.request.app
         self.logger = self.app.logger
 
-    async def get(self, request):
+    async def get(self):
+        ws = web.WebSocketResponse()
+        await ws.prepare(self.request)
+        self.ws_id = id(ws)
+
         # getting room by id
         self.room = await get_object_or_404(
             self.request,
             Room,
-            id=self.request.match_info['room']
+            id=self.request.match_info['slug']
         )
         # getting user by id
-        user = await self.request.app.objects.get(
-            User,
-            id=self.request.match_info['room']
-        )
+        # user = await self.request.app.objects.get(
+        #     User,
+        #     id=self.request.match_info['room']
+        # )
 
-        ws = web.WebSocketResponse()
-        await ws.prepare(self.request)
-
-        if self.room.id not in request.app.wslist:
+        if self.room.id not in self.app.websockets:
             self.app.websockets[self.room.id] = {}
 
-        self.app.websockets[self.room.id][user.email] = ws
+        self.app.websockets[self.room.id][self.ws_id] = ws
 
         async for msg in ws:
-            if msg.tp == WSMsgType.TEXT:
+            print(msg.data)
+            if msg.type == WSMsgType.TEXT:
                 text = msg.data.strip()
-                message = await request.app.objects.create(Message, room=self.room, user=user, text=text)
+                message = await self.request.app.objects.create(Message, room=self.room, user=None, text=text)
                 await self.send_message(message)
 
-            elif msg.tp == WSMsgType.ERROR:
+            elif msg.type == WSMsgType.ERROR:
                 self.app.logger.debug(f'Connection closed with exception {ws.exception()}')
+
+        await self.disconnect(self.room.id, self.ws_id)
 
         return ws
 
@@ -69,17 +79,14 @@ class WebSocket(BaseRESTView):
         """
         Send messages to all in this room
         """
-        for peer in self.request.app.websockets[self.room.id].values():
-            peer.send_json(JSONModelSerializer(message))
+        print(self.app.websockets[self.room.id])
+        for peer in self.app.websockets[self.room.id].values():
+            await peer.send_json(await JSONModelSerializer(message).to_json())
 
-    async def disconnect(self, username, socket, silent=False):
+    async def disconnect(self, room, ws):
         """
         Close connection and notify broadcast
         """
-        app = self.request.app
-        app.websockets.pop(username, None)
+        socket = self.app.websockets[room].pop(ws)
 
-        if not socket.closed:
-            await socket.close()
-        if silent:
-            return
+        await socket.close()

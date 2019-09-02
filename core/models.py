@@ -1,15 +1,7 @@
 from datetime import datetime
 
 import peewee as models
-import peewee_async
-
-
-db = peewee_async.PostgresqlDatabase(None)
-
-
-class BaseModel(models.Model):
-    class Meta:
-        database = db
+from .base import BaseModel
 
 
 class User(BaseModel):
@@ -31,11 +23,6 @@ class Room(BaseModel):
     """
     Model represents Rooms.
     """
-    id = models.UUIDField(
-        primary_key=True,
-        unique=True,
-    )
-
     @classmethod
     async def all_rooms(cls, objects):
         """ Return all rooms """
@@ -45,11 +32,8 @@ class Room(BaseModel):
         """ Return all messages """
         return await objects.prefetch(self.messages, User.select())
 
-    class Meta:
-        order_by = ('name', )
-
     def __str__(self):
-        return self.name
+        return f'{self.id}'
 
 
 class Message(BaseModel):

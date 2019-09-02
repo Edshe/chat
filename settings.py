@@ -45,12 +45,12 @@ LOGGING = {
     }
 }
 
-logging.config.dictConfig(LOGGING)
+# logging.dictConfig(LOGGING)
 logger = logging.getLogger('CHATIO')
 
 
 # Database
-DATABASES = {
+DATABASE = {
     'host': env.str('POSTGRES_HOST', default='127.0.0.1'),
     'port': env.int('POSTGRES_PORT', default='5432'),
     'database': env.str('POSTGRES_DB'),

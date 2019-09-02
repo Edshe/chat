@@ -1,6 +1,8 @@
 import asyncio
 from typing import Iterable
 
+from core.base import BaseModel
+
 
 class JSONModelSerializer:
 
@@ -15,6 +17,12 @@ class JSONModelSerializer:
         for obj in self.objects:
             tmp_object = {}
             for field in obj._meta.fields:
-                tmp_object[field] = getattr(obj, field)
+                value = getattr(obj, field)
+                try:
+                    tmp_object[field] = str(value)
+                except:
+                    tmp_object[field] = value
+
             result.append(tmp_object)
         return result
+
