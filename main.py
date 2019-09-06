@@ -1,3 +1,5 @@
+import logging
+
 import asyncio
 from aiohttp import web
 from aiohttp import web_app
@@ -6,20 +8,17 @@ from server import ChatApplication
 import settings
 
 
-middlewares = []
-
-# if settings.DEBUG:
-#     middlewares.append(aiohttp_debugtoolbar.middleware)
-
-
-async def get_application(loop=None):
+async def get_application(loop: object = None) -> object:
     """
     Function creates app instance
     and returns it
     """
+
     app = ChatApplication(
-        loop=loop
+        loop=loop,
+        logger=logging.getLogger('Chat')
     )
+
     return app
 
 

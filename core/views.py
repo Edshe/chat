@@ -1,3 +1,4 @@
+
 import re
 import aiohttp_jinja2
 
@@ -19,11 +20,10 @@ class RoomView(BaseRESTView):
     async def get(self) -> Response:
         rooms = await Room.all_rooms(self.request.app.objects)
         data = JSONModelSerializer(rooms).to_json()
-        return web.json_response(data)
+        return web.json_response(data, status=200)
 
     async def post(self) -> Response:
         room = await self.request.app.objects.create(Room)
-
         data = await JSONModelSerializer(room).to_json()
         return web.json_response(data, status=201)
 
@@ -40,6 +40,8 @@ class WebSocket(BaseRESTView):
         self.logger = self.app.logger
 
     async def get(self):
+        self.logger.info('New websocket connection')
+
         ws = web.WebSocketResponse()
         await ws.prepare(self.request)
         self.ws_id = id(ws)
@@ -62,7 +64,6 @@ class WebSocket(BaseRESTView):
         self.app.websockets[self.room.id][self.ws_id] = ws
 
         async for msg in ws:
-            print(msg.data)
             if msg.type == WSMsgType.TEXT:
                 text = msg.data.strip()
                 message = await self.request.app.objects.create(Message, room=self.room, user=None, text=text)
@@ -79,7 +80,7 @@ class WebSocket(BaseRESTView):
         """
         Send messages to all in this room
         """
-        print(self.app.websockets[self.room.id])
+        self.logger.info(self.app.websockets[self.room.id])
         for peer in self.app.websockets[self.room.id].values():
             await peer.send_json(await JSONModelSerializer(message).to_json())
 

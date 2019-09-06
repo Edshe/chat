@@ -13,7 +13,7 @@ class JSONModelSerializer:
             self.objects = [objects, ]
 
     async def to_json(self):
-        result = []
+        results = []
         for obj in self.objects:
             tmp_object = {}
             for field in obj._meta.fields:
@@ -23,6 +23,9 @@ class JSONModelSerializer:
                 except:
                     tmp_object[field] = value
 
-            result.append(tmp_object)
-        return result
+            results.append(tmp_object)
+        return dict(
+            count=len(results),
+            results=results
+        )
 

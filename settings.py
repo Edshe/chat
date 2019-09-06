@@ -1,6 +1,5 @@
 import os
 import sys
-import logging
 import environ
 
 BASE_DIR = os.path.dirname(__file__)
@@ -21,7 +20,7 @@ LOGGING = {
     },
     'formatters': {
         'verbose': {
-            'format': '%(asctime)s P%(process)d %(levelname)s |%(name)s| %(message)s'
+            'format': '%(asctime)s P%(process)d %(levelname)s |%(name)s| %(funcName)s | %(message)s'
         },
     },
     'handlers': {
@@ -30,23 +29,16 @@ LOGGING = {
             'formatter': 'verbose',
             'stream': sys.stdout,
         },
-        'sentry': {
-            'level': 'ERROR',
-            'formatter': 'verbose',
-            'class': 'raven.handlers.logging.SentryHandler',
-        },
+
     },
     'loggers': {
-        'lingupp': {
-            'handlers': ['console', 'sentry'],
-            'level': 'ERROR',
+        'aiohttp.server': {
+            'handlers': ['console'],
+            'level': 'INFO',
             'propagate': False,
         },
     }
 }
-
-# logging.dictConfig(LOGGING)
-logger = logging.getLogger('CHATIO')
 
 
 # Database
